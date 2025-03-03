@@ -1,17 +1,30 @@
-Console Menu:
-Actions loaded: No
-Play count: 1
-Play interval: 1.0 seconds
-1. Start recording (F7)
-2. Stop recording (F8)
-3. List actions (F9)
-4. Play actions (F10)
-5. Save actions (F11)
-6. Load actions (F12)
-7. Set play count
-8. Set play interval
-9. Stop playback (F4)
-0. Exit
+# 安裝說明
+
+## 安裝 Python
+1. 從 [python.org](https://www.python.org/downloads/) 下載並安裝 Python。
+
+## 克隆倉庫
+```sh
+git clone https://github.com/hazasi/MouseMacro.git
+cd MouseMacro
+```
+## 安裝必要元件
+```pip install pyautogui keyboard psutil pywin32 pynput```
+
+## 執行程式
+```python mouse_automation.py```
+
+```
+使用控制台菜單與自動化腳本互動：
+F7 - 開始記錄鼠標點擊
+F8 - 停止記錄
+F9 - 列出記錄的動作
+F10 - 播放記錄的動作
+F11 - 將記錄的動作保存到 actions.json
+F12 - 從 actions.json 加載動作
+F4 - 停止播放
+按照螢幕上的控制台菜單進行其他選項的操作
+```
 
 ## 錄製說明:
 1. 使用 F7 開始錄製動作，建議操作慢一些。
