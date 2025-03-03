@@ -7,7 +7,6 @@ import win32gui
 import win32con
 import win32process
 from pynput import mouse
-from ctypes import windll
 
 class MouseAutomation:
     def __init__(self):
@@ -20,7 +19,6 @@ class MouseAutomation:
         self.stop_playback = False
         self.actions_loaded = False
         self.mouse_listener = None
-        self.mouse_control_enabled = True
 
     def start_recording(self):
         self.recording = True
@@ -64,7 +62,6 @@ class MouseAutomation:
             hwnd = self.get_target_window()
             if hwnd:
                 self.bring_window_to_foreground(hwnd)
-                self.enable_mouse_control(False)
                 self.start_time = time.time()  # Set start time before playing actions
                 for action in self.actions:
                     if self.stop_playback:
@@ -76,10 +73,8 @@ class MouseAutomation:
                         time.sleep(delay)
                     pyautogui.click(action['x'], action['y'])
                 if count < self.play_count - 1 and not self.stop_playback:
-                    self.enable_mouse_control(True)
                     print(f"Waiting for {self.play_interval} seconds before next playback...")
                     self.countdown(self.play_interval)
-                    self.enable_mouse_control(False)
                 print(f"Playback {count + 1}/{self.play_count} completed.")
                 # Ensure the window is brought to foreground again for the next cycle
                 hwnd = self.get_target_window()
@@ -88,7 +83,6 @@ class MouseAutomation:
             else:
                 print(f"Window with process name {self.target_process_name} not found.")
                 break
-        self.enable_mouse_control(True)
         if not self.stop_playback:
             print("All actions played.")
 
@@ -128,17 +122,6 @@ class MouseAutomation:
             }
             self.actions.append(action)
             print(action)
-
-    def enable_mouse_control(self, enable):
-        self.mouse_control_enabled = enable
-        if enable:
-            if self.mouse_listener is None:
-                self.mouse_listener = mouse.Listener(on_click=self.on_click)
-                self.mouse_listener.start()
-        else:
-            if self.mouse_listener is not None:
-                self.mouse_listener.stop()
-                self.mouse_listener = None
 
     def set_play_count(self, count):
         self.play_count = count
@@ -202,6 +185,7 @@ keyboard.add_hotkey('F11', lambda: automation.save_actions('actions.json'))
 keyboard.add_hotkey('F12', lambda: automation.load_actions('actions.json'))
 keyboard.add_hotkey('F4', lambda: setattr(automation, 'stop_playback', True))
 
-automation.enable_mouse_control(True)
+automation.mouse_listener = mouse.Listener(on_click=automation.on_click)
+automation.mouse_listener.start()
 
 automation.console_menu()
