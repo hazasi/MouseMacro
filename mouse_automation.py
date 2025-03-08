@@ -19,6 +19,7 @@ class MouseAutomation:
         self.stop_playback = False
         self.actions_loaded = False
         self.mouse_listener = None
+        self.default_filename = 'actions.json'
 
     def start_recording(self):
         self.recording = True
@@ -34,7 +35,9 @@ class MouseAutomation:
         for action in self.actions:
             print(action)
 
-    def save_actions(self, filename='actions.json'):
+    def save_actions(self, filename=None):
+        if filename is None:
+            filename = self.default_filename
         data = {
             'actions': self.actions,
             'play_count': self.play_count,
@@ -44,7 +47,9 @@ class MouseAutomation:
             json.dump(data, f)
         print(f"Actions saved to {filename}")
 
-    def load_actions(self, filename='actions.json'):
+    def load_actions(self, filename=None):
+        if filename is None:
+            filename = self.default_filename
         with open(filename, 'r') as f:
             data = json.load(f)
             self.actions = data['actions']
@@ -55,6 +60,7 @@ class MouseAutomation:
 
     def play_actions(self):
         self.stop_playback = False
+        total_actions = len(self.actions)
         for count in range(self.play_count):
             if self.stop_playback:
                 print("Playback stopped.")
@@ -63,18 +69,19 @@ class MouseAutomation:
             if hwnd:
                 self.bring_window_to_foreground(hwnd)
                 self.start_time = time.time()  # Set start time before playing actions
-                for action in self.actions:
+                for index, action in enumerate(self.actions):
                     if self.stop_playback:
                         print("Playback stopped.")
                         break
                     delay = action['time'] - (time.time() - self.start_time)
                     if delay > 0:
-                        print(f"Waiting for {delay:.2f} seconds before next action...")
+                        print(f"STEP ({index + 1}/{total_actions}) Waiting for {delay:.2f} seconds before next action...")
                         time.sleep(delay)
                     pyautogui.click(action['x'], action['y'])
                 if count < self.play_count - 1 and not self.stop_playback:
                     print(f"Waiting for {self.play_interval} seconds before next playback...")
-                    self.countdown(self.play_interval)
+                    if not self.countdown(self.play_interval):
+                        break
                 print(f"Playback {count + 1}/{self.play_count} completed.")
                 # Ensure the window is brought to foreground again for the next cycle
                 hwnd = self.get_target_window()
@@ -88,9 +95,12 @@ class MouseAutomation:
 
     def countdown(self, interval):
         for i in range(int(interval), 0, -1):
+            if self.stop_playback:
+                return False
             print(f"Next playback in {i} seconds...", end='\r')
             time.sleep(1)
         print(" " * 30, end='\r')  # Clear the line
+        return True
 
     def get_target_window(self):
         for proc in psutil.process_iter(['pid', 'name']):
@@ -145,7 +155,7 @@ class MouseAutomation:
             print("6. Load actions (F12)")
             print("7. Set play count")
             print("8. Set play interval")
-            print("9. Stop playback (F4)")
+            print("9. Stop playback (F5)")
             print("0. Exit")
             choice = input("Enter your choice: ")
 
@@ -158,9 +168,11 @@ class MouseAutomation:
             elif choice == '4':
                 self.play_actions()
             elif choice == '5':
-                self.save_actions()
+                filename = input(f"Enter filename to save actions (default: {self.default_filename}): ") or self.default_filename
+                self.save_actions(filename)
             elif choice == '6':
-                self.load_actions()
+                filename = input(f"Enter filename to load actions (default: {self.default_filename}): ") or self.default_filename
+                self.load_actions(filename)
             elif choice == '7':
                 count = int(input("Enter play count: "))
                 self.set_play_count(count)
@@ -175,17 +187,18 @@ class MouseAutomation:
             else:
                 print("Invalid choice. Please try again.")
 
-automation = MouseAutomation()
+def main():
+    automation = MouseAutomation()
+    keyboard.add_hotkey('F7', automation.start_recording)
+    keyboard.add_hotkey('F8', automation.stop_recording)
+    keyboard.add_hotkey('F9', automation.list_actions)
+    keyboard.add_hotkey('F10', automation.play_actions)
+    keyboard.add_hotkey('F11', lambda: automation.save_actions(automation.default_filename))
+    keyboard.add_hotkey('F12', lambda: automation.load_actions(automation.default_filename))
+    keyboard.add_hotkey('F5', lambda: setattr(automation, 'stop_playback', True))  # Changed to F5
+    automation.mouse_listener = mouse.Listener(on_click=automation.on_click)
+    automation.mouse_listener.start()
+    automation.console_menu()
 
-keyboard.add_hotkey('F7', automation.start_recording)
-keyboard.add_hotkey('F8', automation.stop_recording)
-keyboard.add_hotkey('F9', automation.list_actions)
-keyboard.add_hotkey('F10', automation.play_actions)
-keyboard.add_hotkey('F11', lambda: automation.save_actions('actions.json'))
-keyboard.add_hotkey('F12', lambda: automation.load_actions('actions.json'))
-keyboard.add_hotkey('F4', lambda: setattr(automation, 'stop_playback', True))
-
-automation.mouse_listener = mouse.Listener(on_click=automation.on_click)
-automation.mouse_listener.start()
-
-automation.console_menu()
+if __name__ == "__main__":
+    main()
